@@ -1,0 +1,200 @@
+﻿@page "/game/{GameId}"
+
+<PageTitle>Game room</PageTitle>
+
+@using Obviously.Data
+@using Obviously.Data.Model
+@using Obviously.Data.Services;
+@inject WordsService WordsService
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject GameService GameService
+@inject ProtectedSessionStorage ProtectedSessionStore
+
+<h1 class="text-primary">Obviously</h1>
+
+@if (game == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Game Room</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>@game.Id</td>
+            </tr>
+        </tbody>
+    </table>
+    // TODO Refresh when a new player enters the game
+    <table class="table" align="center">
+        <thead>
+            <tr>
+                <th>Shared Words</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var word in game.SharedWords)
+            {
+                <tr>
+                    <td>
+                        <button class="btn @WordClass(word)"
+                        id="word_@word.Text"
+                        @onclick="@(_ => ChooseWord(word))">
+                            @word.Text
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <table class="table">
+        <tr>
+            @foreach (var p in game.Players)
+            {
+                <th>@p.Name</th>
+            }
+        </tr>
+        @foreach (var p in game.Players)
+        {
+            <tr>
+                @foreach (var word in p.Words)
+                {
+                    <td>@word.Text</td>
+                }
+            </tr>
+        }
+    </table>
+    <button @onclick="ClickedRefresh">Refresh</button>
+
+    <button id="btnCheckGuesses" class="btn btn-primary" @onclick="@(_ => ResolveChoices())" disabled="@(!haveAllPlayersChosenWord)">Check Guesses!</button>
+
+    @if (haveAllPlayersChosenWord && game.State == GameState.State.Won)
+    {
+        <div class="alert alert-success"><strong>You won!</strong></div>
+    }
+    @if (haveAllPlayersChosenWord && game.State == GameState.State.Lost)
+    {
+        <div class="alert alert-danger"><strong>You lost!</strong></div>
+
+        var wordsChosen = game.Players.Select(p => p.ChosenWord).Distinct();
+
+        var wordsMoreThanOnePlayerChose = wordsChosen.Select(w => (word: w, players: game.Players.Where(p => p.ChosenWord == w)))
+                                                     .Where(i => i.players.Count() > 1);
+
+        foreach (var dup in wordsMoreThanOnePlayerChose)
+        {
+            <dl>
+                <dt>Players who chose @dup.word:</dt>
+                @foreach (var player in dup.players)
+                {
+                    <dd>@player.Name</dd>
+                }
+            </dl>
+        }
+    }
+}
+
+@code {
+    private static Data.Model.Game game;
+
+    [ParameterAttribute]
+    public string GameId { get; set; } = string.Empty;
+    public string CurrentPlayerId { get; set; } = string.Empty;
+    public bool haveAllPlayersChosenWord { get; set; } = false;
+    public List<Word> wordsMoreThanOnePlayerChose { get; set; } = new List<Word>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // TODO Add option for a new round
+        await base.OnInitializedAsync();
+        // TODO disable pre-rendering on the page to allow the usage of session storage:
+        //      https://docs.microsoft.com/en-us/aspnet/core/blazor/state-management?view=aspnetcore-6.0&pivots=server#handle-prerendering
+        var result = await ProtectedSessionStore.GetAsync<string>("PlayerId");
+        CurrentPlayerId = result.Success ? result.Value : string.Empty;
+        
+        game = GameService.GetGame(GameId);
+
+        // Workaround to publish the fact a player has joined
+        //var timer = new System.Timers.Timer(1000);
+        //timer.Elapsed += (s, e) =>
+        //{
+        //    InvokeAsync(() =>
+        //    {
+        //        StateHasChanged();
+        //    });
+        //};
+        //timer.Start();
+
+        GameService.PlayerJoined += OnPlayerJoined;
+        StateHasChanged();
+    }
+
+    private async void OnPlayerJoined(object sender, Player player)
+    {
+        game.Players.Add(player);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    // TODO make the game playable only with x or more players
+    // TODO Make it more obvious words can be chosen
+    private void ChooseWord(Word chosenWord)
+    {
+        var currentPlayer = game.Players.FirstOrDefault(p => p.Id == CurrentPlayerId);
+
+        if (currentPlayer == default)
+        {
+            return;
+        }
+        currentPlayer.ChosenWord = chosenWord;
+
+        haveAllPlayersChosenWord = game.Players.All(p => p.ChosenWord != default);
+        // TODO ¿Does this change the state just for the current page or for all Game pages?
+        this.StateHasChanged();
+
+        // TODO Add an indication that waiting for players to choose
+    }
+
+    // TODO make it so that when one player clicks resolve it resolves for everyone
+    private void ResolveChoices()
+    {
+        var players = game.Players;
+
+        if (!haveAllPlayersChosenWord)
+        {
+            return;
+        }
+        // TODO lock the option to change chosen words
+        var chosenWords = players.Select(p => p.ChosenWord).ToList();
+
+        wordsMoreThanOnePlayerChose = chosenWords.Distinct()
+                                                 .Select(w => (word: w, players: game.Players.Where(p => p.ChosenWord == w)))
+                                                 .Where(i => i.players.Count() > 1)
+                                                 .Select(i => i.word!)
+                                                 .ToList();
+
+        // At least one word was chosen more than once
+        var atLeastOneWordWasNotUnique = chosenWords.Distinct().Count() != (game.SharedWords.Count - 1);
+        game.State = atLeastOneWordWasNotUnique ? GameState.State.Lost : GameState.State.Won;
+
+        this.StateHasChanged();
+    }
+
+    private string WordClass(Word word)
+    {
+        return wordsMoreThanOnePlayerChose.Contains(word) ? "btn-danger" : "btn-primary";
+    }
+
+    private void ClickedRefresh()
+    {
+        this.StateHasChanged();
+    }
+
+
+}

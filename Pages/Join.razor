@@ -1,0 +1,121 @@
+﻿@page "/join"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using Obviously.Data.Model;
+@using Obviously.Data.Services;
+@inject NavigationManager NavigationManager
+@inject ProtectedSessionStorage ProtectedSessionStore
+@inject GameService GameService
+
+<h3>Create or join a game</h3>
+<div>
+    @if (!hasChosenGame)
+    {
+        <div>
+            <button @onclick="ChooseCreateGame" class="btn btn-large btn-primary"> New Game </button>
+        </div>
+        <br />
+        <div>
+            <button @onclick="ChooseJoinGame" class="btn btn-large btn-primary">Join Game</button>
+        </div>
+    }
+    @if (hasChosenGame)
+    {
+        <p>Name<input id="playerName" @bind="playerName" /></p>
+        <br>
+        @if (isNewGame)
+        {
+            <p>
+                <button @onclick="CreateGameAsync" class="btn btn-large btn-primary">Create Game</button>
+            </p>
+        }
+        @if (!isNewGame)
+        {
+            <p>Game ID<input id="gameCode" @bind="gameToJoin" /></p>
+            <p>
+                <button @onclick="JoinGameAsync" class="btn btn-large btn-primary">Join</button>
+            </p>
+        }
+    }
+</div>
+
+@foreach (var player in PlayersService.GetPlayers())
+{
+    <tr>
+        <td>@player.Name</td>
+        <td>@player.Id</td>
+    </tr>
+}
+
+@foreach (var game in GameService.GetAllGames())
+{
+    <tr>
+        <td>game id: @game.Id</td>
+    </tr>
+}
+
+@code {
+    private string playerName = string.Empty;
+    private string gameToJoin = string.Empty;
+    private bool hasChosenGame = false;
+    private bool isNewGame = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Remember the name of the player
+        var result = await ProtectedSessionStore.GetAsync<string>("PlayerId");
+        var currentPlayerId = result.Success ? result.Value : string.Empty;
+        if (currentPlayerId != string.Empty)
+        {
+            playerName = PlayersService.GetPlayer(currentPlayerId)?.Name;
+        }
+    }
+
+    private void ChooseCreateGame()
+    {
+        hasChosenGame = true;
+        isNewGame = true;
+    }
+
+    private void ChooseJoinGame()
+    {
+        hasChosenGame = true;
+        isNewGame = false;
+    }
+
+    private async void CreateGameAsync()
+    {
+        isNewGame = true;
+        if (string.IsNullOrEmpty(playerName))
+        {
+            return;
+        }
+        var player = PlayersService.CreatePlayer(playerName);
+
+        var game = GameService.CreateNewGame(player);
+        Console.WriteLine($"Player {player} created game {game}");
+        await ProtectedSessionStore.SetAsync("PlayerId", player.Id);
+        NavigationManager.NavigateTo($@"game/{game.Id}");
+    }
+
+    private async void JoinGameAsync()
+    {
+        if (string.IsNullOrEmpty(playerName))
+        {
+            return;
+        }
+
+        var game = GameService.GetGame(gameToJoin);
+        if (game is null)
+        {
+            return;
+        }
+
+        var player = PlayersService.CreatePlayer(playerName);
+        Console.WriteLine($"Player {player} joined game {game}");
+
+        game.AddPlayer(player);
+        await ProtectedSessionStore.SetAsync("PlayerId", player.Id);
+        NavigationManager.NavigateTo($@"game/{game.Id}");
+        this.StateHasChanged();
+    }
+}
