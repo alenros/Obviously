@@ -1,7 +1,7 @@
 ﻿using MoreLinq;
-using Obviously.Data.Model;
+using Obviously.Models;
 
-namespace Obviously.Data.Services
+namespace Obviously.Services
 {
     public class GameService
     {

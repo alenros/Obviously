@@ -1,4 +1,4 @@
-﻿namespace Obviously.Shared
+﻿namespace Obviously
 {
     public class GameConstants
     {

@@ -1,4 +1,4 @@
-﻿namespace Obviously.Data.Model
+﻿namespace Obviously.Models
 {
     public class GameState
     {

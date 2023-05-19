@@ -1,7 +1,7 @@
 ﻿using MoreLinq;
 using Obviously.Shared;
 
-namespace Obviously.Data.Model
+namespace Obviously.Models
 {
     public class Game
     {

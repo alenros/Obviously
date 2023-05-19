@@ -1,4 +1,4 @@
-﻿namespace Obviously.Data
+﻿namespace Obviously.Shared
 {
     public class Shared
     {

@@ -1,14 +1,13 @@
-﻿using Obviously.Data.Services;
-using Obviously.Data.Model;
+﻿using Obviously.Services;
 
-namespace Obviously.Data.Model
+namespace Obviously.Models
 {
     public class WordsDeck
     {
         public WordsDeck()
         {
             var w = WordsService.Words.Value;
-            var shuffled = Shared.GetShuffledSubArray(w);
+            var shuffled = Shared.Shared.GetShuffledSubArray(w);
             Words = new Stack<Word>(shuffled);
         }
 
@@ -16,7 +15,7 @@ namespace Obviously.Data.Model
 
         public void Shuffle()
         {
-            var shuffledWords = Shared.GetShuffledSubArray(Words.ToArray());
+            var shuffledWords = Shared.Shared.GetShuffledSubArray(Words.ToArray());
             Words = new Stack<Word>(shuffledWords);
         }
 

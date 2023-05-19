@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
-using Obviously.Data.Services;
+using Obviously.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

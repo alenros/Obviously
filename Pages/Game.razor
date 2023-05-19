@@ -2,14 +2,13 @@
 
 <PageTitle>Game room</PageTitle>
 
-@using Obviously.Data
-@using Obviously.Data.Model
-@using Obviously.Data.Services;
+@using Obviously.Models
+@using Obviously.Services
 @inject WordsService WordsService
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject GameService GameService
 @inject ProtectedSessionStorage ProtectedSessionStore
-
+@inject Obviously.Models.Game myGameState
 <h1 class="text-primary">Obviously</h1>
 
 @if (game == null)
@@ -102,7 +101,7 @@ else
 }
 
 @code {
-    private static Data.Model.Game game;
+    private static Models.Game game;
 
     [ParameterAttribute]
     public string GameId { get; set; } = string.Empty;
