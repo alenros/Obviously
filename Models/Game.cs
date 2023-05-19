@@ -5,7 +5,7 @@ namespace Obviously.Models
 {
     public class Game
     {
-        public string Id { get; set; } = new Random().NextInt64(1000, 9999).ToString();
+        public long Id { get; set; } = new Random().NextInt64(1000, 9999);
 
         public List<Word> SharedWords { get; set; } = new List<Word>();
 

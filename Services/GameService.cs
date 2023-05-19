@@ -9,7 +9,7 @@ namespace Obviously.Services
 
         public static List<Game> GetAllGames() => Games;
 
-        public Game? GetGame(string id) => Games.FirstOrDefault(g => g.Id == id);
+        public Game? GetGame(long id) => Games.FirstOrDefault(g => g.Id == id);
 
         public static Game CreateNewGame(Player player)
         {

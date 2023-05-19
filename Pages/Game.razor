@@ -104,7 +104,7 @@ else
     private static Models.Game game;
 
     [ParameterAttribute]
-    public string GameId { get; set; } = string.Empty;
+    public long GameId { get; set; } = default;
     public string CurrentPlayerId { get; set; } = string.Empty;
     public bool haveAllPlayersChosenWord { get; set; } = false;
     public List<Word> wordsMoreThanOnePlayerChose { get; set; } = new List<Word>();
